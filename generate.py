@@ -8,6 +8,7 @@ from decoder import predictors, decoders
 
 path = os.path.realpath(__file__)
 path = path[:path.rindex('/')+1]
+sys.path.insert(0, os.path.join(path, 'word_rep/'))
 sys.path.insert(0, os.path.join(path, 'lm/'))
 sys.path.insert(0, os.path.join(path, 'utils/'))
 sys.path.insert(0, os.path.join(path, 'entailment/'))
