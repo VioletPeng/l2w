@@ -10,7 +10,7 @@ parser.add_argument('--len_continuation', type=int, default=5,
                     help='number of sentences in continuation')
 parser.add_argument('--doc_level', action='store_true',
                     help='use this flag if each line in the dataset is a document')
-parser.add_argument('--sent_sym', type=str, default='\t',
+parser.add_argument('--sent_sym', type=str, default='</s>',
                     help = 'the sentence delimeter to use')
 args = parser.parse_args()
 
@@ -34,11 +34,9 @@ for filename in filenames:
         if args.doc_level:
             assert(args.sent_sym is not None)
             for line in lines:
-                sents = line.split(args.sent_sym)
-                context = args.sent_sym.join(sents[:args.len_context])
-                continuation = args.sent_sym.join(sents[args.len_context:(args.len_context+args.len_continuation)])
-                #context = (' %s ' % args.sent_sym).join(sents[:args.len_context])
-                #continuation = (' %s ' % args.sent_sym).join(sents[args.len_context:(args.len_context+args.len_continuation)])
+                sents = line.strip().split(args.sent_sym)
+                context = (' %s ' % args.sent_sym).join(sents[:args.len_context])
+                continuation = (' %s ' % args.sent_sym).join(sents[args.len_context:(args.len_context+args.len_continuation)])
                 contexts.append(context)
                 continuations.append(continuation)
         else:
