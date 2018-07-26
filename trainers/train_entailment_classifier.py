@@ -176,13 +176,13 @@ for epoch in range(args.num_epochs):
         def compute_loss(context, candidate, label):
             decision = model(context, candidate, itos=itos) 
             #print(decision[0])
-            #decision = softmax(decision, dim=1)
             #print(decision.size(), label.size(), decision[0], label[0])
             #print(decision.sum(dim=1))
             x_loss = loss_function(decision, label)
             return x_loss, decision
 
         loss = None
+        ### Ignore this, we are not using train_prefixes
         if args.train_prefixes:
             end_seq_len = batch.candidate[0].size()[0] 
             loss = 0
