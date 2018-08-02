@@ -39,9 +39,6 @@ class DecomposableAttentionClassifier(nn.Module):
             self.hidden_dim, self.label_size, bias=True)
 
         #self.drop = nn.Dropout(dropout_rate)
-        #print([p.requires_grad for p in self.input_linear.parameters()])
-        #print([p.requires_grad for p in self.mlp_h.parameters()])
-        #print([p.requires_grad for p in self.final_linear.parameters()])
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -96,7 +93,6 @@ class DecomposableAttentionClassifier(nn.Module):
         sent1_embed = self.embed_seq(context) # 1 x len1 x hidden
         sent2_embed = self.embed_seq(end) # batch x len2 x hidden
 
-        #print(decode_mode, multi_decode_mode)
         # Attend 
         if decode_mode:
             f1 = self.mlp_f(sent1_embed.view(-1, self.hidden_dim)).view(-1,

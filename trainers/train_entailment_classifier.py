@@ -11,7 +11,7 @@ from torchtext import vocab
 import torch.nn as nn
 import torch.optim as optim
 import torch.autograd as autograd
-from torch.nn.functional import softmax
+
 
 path = os.path.realpath(__file__)
 path = path[:path.rindex('/')+1]
@@ -105,7 +105,7 @@ LABEL = data.Field(sequential=False, use_vocab=False,
 print('Reading the data')
 train, valid = data.TabularDataset.splits(
     path=args.data_dir, 
-    train = 'valid.txt', validation='valid.txt',
+    train = 'train.txt', validation='valid.txt',
     format='tsv',
     fields=[
         ('context', TEXT),
@@ -130,7 +130,7 @@ print('Vocab size %d' % len(TEXT.vocab))
 train_iter = data.Iterator(dataset=train, batch_size=args.batch_size, sort_key=lambda x: len(x.context), sort=True, repeat=False)
 valid_iter = data.Iterator(dataset=valid, batch_size=args.batch_size, sort_key=lambda x: len(x.context), sort=True, repeat=False)
 
-print('Initializing the model')
+print('Initializing the model. Batch size:', args.batch_size)
 
 model = DecomposableAttentionClassifier(len(TEXT.vocab), 3, args.embedding_dim,
           args.hidden_dim, args.dropout_rate,
@@ -138,10 +138,7 @@ model = DecomposableAttentionClassifier(len(TEXT.vocab), 3, args.embedding_dim,
 
 loss_function = nn.CrossEntropyLoss()
 
-#print([p.requires_grad for p in model.parameters()])
-parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
-#print([p.requires_grad for p in parameters])
-#print('parameter sizes:',[np.prod(p.size()) for p in parameters], [np.prod(p.size()) for p in model.parameters()]) 
+parameters = filter(lambda p: p.requires_grad, model.parameters())
 if args.adam:
     optimizer = optim.Adam(parameters, lr=args.lr)
 elif args.adagrad:
@@ -175,14 +172,10 @@ for epoch in range(args.num_epochs):
 
         def compute_loss(context, candidate, label):
             decision = model(context, candidate, itos=itos) 
-            #print(decision[0])
-            #print(decision.size(), label.size(), decision[0], label[0])
-            #print(decision.sum(dim=1))
             x_loss = loss_function(decision, label)
             return x_loss, decision
 
         loss = None
-        ### Ignore this, we are not using train_prefixes
         if args.train_prefixes:
             end_seq_len = batch.candidate[0].size()[0] 
             loss = 0
@@ -198,16 +191,10 @@ for epoch in range(args.num_epochs):
         else:
             loss, decision = compute_loss(batch.context[0], 
                     batch.candidate, batch.label)
-            predictions = np.argmax(decision.data.cpu().numpy(), 1)
-            #print(predictions)
-            #print(batch.label)
 
-        loss.backward() 
-        #print('parameter gradients:', sum([np.prod(p.size()) for p in parameters]), sum([np.prod(p.size()) for p in model.parameters()])) 
-        #for param in parameters:
-        #    print(param.size())
-        optimizer.step()
+        loss.backward()
         total_loss += loss.data.item() #[0]
+        optimizer.step()
 
         correct += np.sum(np.equal(np.argmax(decision.data.cpu().numpy(), 1),
             np.round(batch.label.data.cpu().numpy())))
@@ -220,8 +207,6 @@ for epoch in range(args.num_epochs):
             v_correct, v_total = 0, 0
             ones = 0
             for batch in valid_iter:
-                #print('batch context type:', type(batch.context), len(batch.context), batch.context[0].size(), batch.context[1].size())
-                #print('batch candidate type:', type(batch.candidate), len(batch.candidate), batch.candidate[0].size(), batch.candidate[1].size())
                 decision = model(batch.context[0], batch.candidate) 
                 predictions = np.argmax(decision.data.cpu().numpy(), 1)
                 labels = np.round(batch.label.data.cpu().numpy())
@@ -229,7 +214,7 @@ for epoch in range(args.num_epochs):
                 v_total += batch.label.size(0)
                 ones += np.sum(predictions)
             last_valid = v_correct / v_total
-            print('Valid: %f, Loss: %f of %d instances.' % (v_correct / v_total, total_loss, total))
+            print('Valid: %f' % (v_correct / v_total))
             if v_correct / v_total > args.stop_threshold: # early stopping
                 early_stop = True
                 break  
