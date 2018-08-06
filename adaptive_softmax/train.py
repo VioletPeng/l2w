@@ -77,6 +77,7 @@ with doing('Loading data'):
     cutoffs = args.cutoffs + [ntokens]
 
 with doing('Constructing model'):
+    print('Args:', args)
     if args.old is None:
         model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, cutoffs, args.dropout, args.tied)
     else:
@@ -86,6 +87,7 @@ with doing('Constructing model'):
         model.cuda()
     
     criterion = AdaptiveLoss(cutoffs)
+
 
 ###############################################################################
 # Training code
@@ -134,9 +136,9 @@ def train():
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         hidden = repackage_hidden(hidden)
         model.zero_grad()
-        model.softmax.set_target(target.data.view(-1))
+        model.softmax.set_target(target.data.contiguous().view(-1))
         output, hidden = model(source, hidden)
-        loss = criterion(output, target.view(-1))
+        loss = criterion(output, target.contiguous().view(-1))
         loss.backward()
 
 
@@ -160,6 +162,7 @@ def train():
 
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:
+                print("Saving new best validation")
                 with open(args.save, 'wb') as f:
                     torch.save(model, f)
                 best_val_loss = val_loss
@@ -183,6 +186,8 @@ try:
                 'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                            val_loss, math.exp(val_loss)))
         print('-' * 89)
+        sys.stdout.flush()
+
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
