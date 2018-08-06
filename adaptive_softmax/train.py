@@ -183,6 +183,8 @@ try:
                 'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                            val_loss, math.exp(val_loss)))
         print('-' * 89)
+        sys.stdout.flush()
+
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
