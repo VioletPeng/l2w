@@ -13,6 +13,7 @@ import corpus
 import model
 
 from adaptive_softmax import AdaptiveLoss
+from splitcross import SplitCrossEntropyLoss
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', type=str,
@@ -60,6 +61,8 @@ parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
 parser.add_argument('--gpu', type=int,  default=0,
                     help='gpu to use')
+parser.add_argument('--criterion', type=str, default='splitcross',
+                    help='type of optimization criterion. supports splitcross or adaptive')
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
@@ -85,8 +88,21 @@ with doing('Constructing model'):
             model = torch.load(model_file)
     if args.cuda:
         model.cuda()
-    
-    criterion = AdaptiveLoss(cutoffs)
+
+    if args.criterion == 'adaptive':
+        criterion = AdaptiveLoss(cutoffs)
+    elif args.criterion == 'splitcross':
+        splits = []
+        if ntokens > 500000:
+            # One Billion
+            # This produces fairly even matrix mults for the buckets:
+            # 0: 11723136, 1: 10854630, 2: 11270961, 3: 11219422
+            splits = [4200, 35000, 180000]
+        elif ntokens > 75000:
+            # WikiText-103
+            splits = [2800, 20000, 76000]
+        print('Using', splits)
+        criterion = SplitCrossEntropyLoss(args.emsize, splits=splits, verbose=False)
 
 
 ###############################################################################
