@@ -163,10 +163,12 @@ for i in range(args.epochs):
             if i < args.skip:
                 continue
             if args.gen_disc_data:
+                # if generating data for discriminators, take the whole input text as context
                 init_tokens = line.strip().lower().split()
                 init_tokens_ints = [dictionary[token] for token in init_tokens]
 
             else:
+                # else create initial and continuation via tab delimiting
                 initial, continuation = line.split('\t')[:2]
                 init_tokens = initial.strip().lower().split()
                 true_cont_tokens = continuation.strip().lower().split()
@@ -183,7 +185,10 @@ for i in range(args.epochs):
                 lm_pred_cont_tokens = [dictionary[token]
                                         for token in lm_pred_tokens_ints[len(init_tokens):]]
                 lm_cont = ' '.join(lm_pred_cont_tokens)
-                out_str = '%s\n' % lm_cont
+                if args.both:
+                    out_str = '{0} {1}\n'.format(init, lm_cont)
+                else:
+                    out_str = '%s\n' % lm_cont
             else:
                 pred_tokens_ints = decoder.decode(init_tokens_ints, itos=dictionary)
                 pred_cont_tokens = [dictionary[token]
