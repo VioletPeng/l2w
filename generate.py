@@ -164,7 +164,7 @@ for i in range(args.epochs):
                 continue
             if args.gen_disc_data:
                 # if generating data for discriminators, take the whole input text as context
-                init_tokens = line.strip().lower().split()
+                init_tokens = line.strip().split()
                 init_tokens_ints = [dictionary[token] for token in init_tokens]
 
             else:
